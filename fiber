@@ -1,0 +1,31 @@
+#!/bin/bash
+WORKING_DIR="${HOME}"
+> $WORKING_DIR/fibertmp.txt
+echo "Hello, "$USER".  This script will determine if ATT Fiber is available at your address ."
+echo -n "Enter your email and press [ENTER]: "
+read EMAIL 
+echo -n "Enter your street address and press [ENTER]: "
+read ADDRESS
+echo -n "Enter your State and press [ENTER]: "
+read STATE
+echo -n "Enter your City and press [ENTER]: "
+read CITY
+echo -n "Enter your Zip and press [ENTER]: "
+read ZIP
+TMP=$WORKING_DIR/fibertmp.txt
+
+
+body=$(cat  << EOF
+{
+    "userInputZip":$ZIP,
+    "userInputState":$STATE,
+    "userInputCity":$CITY,
+    "userInputAddressLine1":$ADDRESS,
+    "mode":"fullAddress" 
+    }
+EOF
+)
+
+curl -s -H "Content-Type: application/json" -X POST -d "$body" https://www.att.com/services/shop/model/ecom/shop/view/unified/qualification/service/CheckAvailabilityRESTService/invokeCheckAvailability  | grep "userInputAddressLine1\|QualifiedNetworkTransportType\|lightspeedAvailFlag\|LIGHTSPEEDPending" | sed 's/^[ ]*//' | tr "," "\n" | sed -e "s/\"//g" > $TMP
+
+mail -s "ATT Fiber Check" $EMAIL < $TMP
